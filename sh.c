@@ -46,21 +46,38 @@ ll *generate_env_paths(string file) {
     return paths;
 }
 
+// Open text files for input / output 
+cmd_t open_io_files(cmd_t cmd) {
+    int fd;
+    if (cmd.in && cmd.fd[0] == STDIN_FILENO) { 
+        fd = open(cmd.in, O_RDONLY, 0666);
+        cmd.fd[0] = fd;
+    }
+    if (cmd.out && cmd.fd[1] == STDOUT_FILENO) { 
+        fd = open(cmd.out, O_TRUNC | O_WRONLY | O_CREAT, 0666);
+        cmd.fd[1] = fd;
+    }
+    return cmd;
+}
+
+
 // Redirects STDOUT and STDIN to the one configured on cmd
 void redirect_io(cmd_t cmd) {
-    if (cmd.in) { 
-        int fd = open(cmd.in, O_RDONLY, 0666);
-        dup2(fd, STDIN_FILENO);
-        close(fd);
+    if (cmd.fd[0] != STDIN_FILENO) { // this is the infile
+        dup2(cmd.fd[0], STDIN_FILENO);
+        close(cmd.fd[0]);
     }
-    if (cmd.out) { 
-        int fd = open(cmd.out, O_TRUNC | O_WRONLY | O_CREAT, 0666);
-        dup2(fd, STDOUT_FILENO);
-        close(fd);
+    if (cmd.fd[1] != STDOUT_FILENO) { // this is the outfile
+        dup2(cmd.fd[1], STDOUT_FILENO);
+        close(cmd.fd[1]);
     }
 }
 
+
 void start_cmd(cmd_t cmd) {
+    cmd = open_io_files(cmd);
+    redirect_io(cmd);
+
     ll *paths = generate_env_paths(cmd.file);
     
     // Generates all possible commands (e.g. cat, /bin/cat, /etc/bin/cat ...)
@@ -74,38 +91,52 @@ void start_cmd(cmd_t cmd) {
 }
 
 void start_pipe(pipe_t p) {
-    cmd_t cmd;
+    cmd_t cmd = p.cmd[0];
     pid_t child_pid;
-    
-    int wstatus;
-    int pipefd[2];
 
-    // Sanity check: empty pipe
+    int wstatus;
+    int pipefd[2], infile, outfile;
+
+    // Sanity check: empty pipe or special commands
     if (p.size == 0)
         return;
+    if (strcmp(cmd.file, "exit") == 0)
+        exit(EXIT_SUCCESS);
+    if(strcmp(cmd.file, "cd") == 0) {
+        chdir(cmd.argv[1]);
+        return;
+    }
 
+    // Main pipe loop
+    infile = p.fd[0];
     for (int i = 0; i < p.size; i++) {
         cmd = p.cmd[i];
+        
+        if (i < p.size-1) {
+            pipe(pipefd);
+            outfile = pipefd[1];
+        } else outfile = p.fd[1];
 
-        // Not the last one in the pipe
-        if (i+1 < p.size) {
-           if (pipe(pipefd) == -1) {
-               perror("pipe");
-               exit(EXIT_FAILURE);
-           }
-           // outfile = pipefd[1]
-        }
+        // Setting io file descriptors
+        cmd.fd[0] = infile;
+        cmd.fd[1] = outfile;
 
         child_pid = fork();
-        if (child_pid == 0) { // child 
+        if (child_pid == 0) { // child
             start_cmd(cmd);
         } else if (child_pid > 0) { // parent
-            wait(&wstatus);
+            waitpid(child_pid, &wstatus, 0);
         } else { // error
             perror("fork");
             exit(EXIT_FAILURE);
         }
 
+        // Checks if fd is not the end of pipe and closes it
+        if (infile != p.fd[0])
+            close(infile);
+        if (outfile != p.fd[1])
+            close(outfile);
+        infile = pipefd[0];
     }
 }
 
@@ -116,56 +147,7 @@ int main () {
     display_prompt();
     while (fgets(str, sizeof(str), stdin)) {
         pipe_t p = parse_pipe(str);
-        if (p.size == 0){
-            display_prompt();
-            continue;
-        }
-
-        int prev_fd[2], next_fd[2];
-        pipe(next_fd);
-
-        for (int i = 0; i < p.size; i++) {
-            cmd_t cmd = p.cmd[i];
-
-            if(strcmp(cmd.file, "cd") == 0) {
-                chdir(cmd.argv[1]);
-                continue;
-            }
-            else if (strcmp(cmd.file, "exit") == 0)
-                exit(EXIT_SUCCESS);
-
-            int wstatus;
-            pid_t child_pid = fork();
-            if (child_pid == 0) { // child one
-                redirect_io(cmd);
-                if (i!=0)
-                    dup2(prev_fd[0], STDIN_FILENO);
-                if (i != p.size-1)
-                    dup2(next_fd[1], STDOUT_FILENO);
-
-                // I can close all file descriptors because 
-                // the important ones are copied on STDIN (1)
-                // and STDOUT (2).
-                close(prev_fd[0]); close(prev_fd[1]);
-                close(next_fd[1]); close(next_fd[0]);
-
-                start_cmd(cmd);
-            } else if (child_pid > 0) { // parent one 
-                if (i > 0)
-                    close(prev_fd[0]);
-                close(next_fd[1]);
-                wait(&wstatus); // waits for this child
-            } else {
-                perror("fork");
-                exit(EXIT_FAILURE);
-            }
-            // swaps prev and next pipe file descriptors
-            prev_fd[0] = next_fd[0];
-            prev_fd[1] = next_fd[1];
-            if (i < p.size-1)
-                pipe(next_fd);
-        }
-        close(prev_fd[0]);
+        start_pipe(p);
         display_prompt();
     }
 

@@ -20,6 +20,7 @@ typedef struct cmd_t {
     string *argv;
     string in;
     string out;
+    int fd[2];
 } cmd_t;
 
 typedef struct pipe_t {

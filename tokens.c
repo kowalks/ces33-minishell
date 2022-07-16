@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "lists.h"
 
@@ -12,6 +13,7 @@ typedef struct cmd_t {
     string *argv;
     string in;
     string out;
+    int fd[2];
 } cmd_t;
 
 typedef struct pipe_t {
@@ -47,12 +49,14 @@ void print_cmd(cmd_t c) {
     if (c.out)
         printf("(> %s) ", c.out);
     printf("\n");
+    printf("fd[0] = %d; fd[1] = %d\n", c.fd[0], c.fd[1]);
 }
 
 void print_pipe(pipe_t p) {
     for (int i=0; i < p.size; i++)
         print_cmd(p.cmd[i]);
     printf("\n");
+    printf("p.fd[0] = %d; p.fd[1] = %d\n", p.fd[0], p.fd[1]);
 }
 
 cmd_t parse_cmd(string s) {
@@ -72,8 +76,11 @@ cmd_t parse_cmd(string s) {
             cmd.argv[cmd.argc++] = word;
     }
     cmd.argv[cmd.argc] = NULL;
-
     free(list);
+
+    if (!cmd.in) cmd.fd[0] = STDIN_FILENO;
+    if (!cmd.out) cmd.fd[1] = STDOUT_FILENO;
+
     return cmd;
 }
 
@@ -89,7 +96,11 @@ pipe_t parse_pipe(string s) {
 
     for (int i = 0; i < pipe.size; i++)
         pipe.cmd[i] = parse_cmd(pop(list));
-    
+
     free(list);
+
+    pipe.fd[0] = STDIN_FILENO;
+    pipe.fd[1] = STDOUT_FILENO;
+    
     return pipe;
 }
