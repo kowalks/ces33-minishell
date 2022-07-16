@@ -43,6 +43,10 @@ void print_pipe(pipe_t p) {
     printf("p.fd[0] = %d; p.fd[1] = %d\n", p.fd[0], p.fd[1]);
 }
 
+void log_pipe(pipe_t *p) {
+    fprintf(stderr, "PID[%ld]: %s\n", (long) p->pgid, p->fcmd);
+}
+
 cmd_t parse_cmd(string s) {
     ll *list = tokenize(s, " ");
 
@@ -85,6 +89,7 @@ pipe_t parse_pipe(string s) {
 
     pipe.fd[0] = STDIN_FILENO;
     pipe.fd[1] = STDOUT_FILENO;
+    pipe.fcmd = s;
     
     return pipe;
 }

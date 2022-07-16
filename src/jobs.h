@@ -11,12 +11,12 @@
 
 #include "tokens.h"
 
-void open_io_files(cmd_t cmd);
+void open_io_files(cmd_t *cmd);
 
-void redirect_io(cmd_t cmd);
+void redirect_io(cmd_t *cmd);
 
-void start_cmd(cmd_t cmd);
+void start_cmd(cmd_t *cmd);
 
-void start_pipe(pipe_t p);
+void start_pipe(pipe_t *p);
 
 #endif

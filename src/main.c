@@ -33,7 +33,7 @@ int main () {
     display_prompt();
     while (fgets(str, sizeof(str), stdin)) {
         pipe_t p = parse_pipe(str);
-        start_pipe(p);
+        start_pipe(&p);
         display_prompt();
     }
 
