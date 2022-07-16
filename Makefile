@@ -2,7 +2,7 @@
 TARGET_EXEC := minishell
 
 BUILD_DIR := ./build
-SRC_DIRS := .
+SRC_DIRS := ./src
 
 CC := gcc
 
