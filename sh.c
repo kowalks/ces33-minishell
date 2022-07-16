@@ -60,6 +60,55 @@ void redirect_io(cmd_t cmd) {
     }
 }
 
+void start_cmd(cmd_t cmd) {
+    ll *paths = generate_env_paths(cmd.file);
+    
+    // Generates all possible commands (e.g. cat, /bin/cat, /etc/bin/cat ...)
+    while (size(paths)){
+        cmd.file = cmd.argv[0] = pop(paths);
+        execv(cmd.file, cmd.argv);
+    }
+    free(paths);
+    perror("execv");
+    exit(EXIT_FAILURE);
+}
+
+void start_pipe(pipe_t p) {
+    cmd_t cmd;
+    pid_t child_pid;
+    
+    int wstatus;
+    int pipefd[2];
+
+    // Sanity check: empty pipe
+    if (p.size == 0)
+        return;
+
+    for (int i = 0; i < p.size; i++) {
+        cmd = p.cmd[i];
+
+        // Not the last one in the pipe
+        if (i+1 < p.size) {
+           if (pipe(pipefd) == -1) {
+               perror("pipe");
+               exit(EXIT_FAILURE);
+           }
+           // outfile = pipefd[1]
+        }
+
+        child_pid = fork();
+        if (child_pid == 0) { // child 
+            start_cmd(cmd);
+        } else if (child_pid > 0) { // parent
+            wait(&wstatus);
+        } else { // error
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+
+    }
+}
+
 int main () {
     char str[MAXLEN];
 
@@ -69,6 +118,10 @@ int main () {
         str[strlen(str)-1] = 0;
 
         pipe_t p = parse_pipe(str);
+        if (p.size == 0){
+            display_prompt();
+            continue;
+        }
 
         int prev_fd[2], next_fd[2];
         pipe(next_fd);
@@ -98,15 +151,7 @@ int main () {
                 close(prev_fd[0]); close(prev_fd[1]);
                 close(next_fd[1]); close(next_fd[0]);
 
-                // Generates all possible commands (e.g. cat, /bin/cat, /etc/bin/cat ...)
-                ll *paths = generate_env_paths(cmd.file);
-                while (size(paths)){
-                    cmd.file = cmd.argv[0] = pop(paths);
-                    execv(cmd.file, cmd.argv);
-                }
-                free(paths);
-                perror("execv");
-                exit(EXIT_FAILURE);
+                start_cmd(cmd);
             } else if (child_pid > 0) { // parent one 
                 if (i > 0)
                     close(prev_fd[0]);
