@@ -1,18 +1,3 @@
-/**
- * Minishell - Milestone 1
- * 
- * Implementation for a simple minishell on Linux. 
- * 
- * Features:
- *     - Directory commands (try cd ..)
- *     - Exit command (try exit on terminal)
- *     - Output redirect (try echo hello > out.txt)
- *     - Pipe construction (try echo hello | grep h)
- *     - Env variable PATH for bin search (i.e. you can invoke
- *       a command with <name> instead of /bin/<name>)
- * 
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,7 +8,7 @@
 #include <sys/wait.h>
 
 #include "tokens.h"
-#include "prompt.h"
+#include "job_control.h"
 
 #define MAXLEN 1000
 
@@ -73,10 +58,10 @@ void redirect_io(cmd_t cmd) {
     }
 }
 
-
 void start_cmd(cmd_t cmd) {
     cmd = open_io_files(cmd);
     redirect_io(cmd);
+    restore_signals();
 
     ll *paths = generate_env_paths(cmd.file);
     
@@ -111,9 +96,10 @@ void start_pipe(pipe_t p) {
     infile = p.fd[0];
     for (int i = 0; i < p.size; i++) {
         cmd = p.cmd[i];
-        
+
         if (i < p.size-1) {
-            pipe(pipefd);
+            if (pipe(pipefd) < 0)
+                perror ("pipe");
             outfile = pipefd[1];
         } else outfile = p.fd[1];
 
@@ -125,7 +111,11 @@ void start_pipe(pipe_t p) {
         if (child_pid == 0) { // child
             start_cmd(cmd);
         } else if (child_pid > 0) { // parent
-            waitpid(child_pid, &wstatus, 0);
+            // p.cmd[i].pid = child_pid;
+            // if (!p.pgid)
+            //     p.pgid = child_pid;
+            // setpgid(child_pid, p.pgid);
+            waitpid(child_pid, &wstatus, WUNTRACED);
         } else { // error
             perror("fork");
             exit(EXIT_FAILURE);
@@ -138,18 +128,4 @@ void start_pipe(pipe_t p) {
             close(outfile);
         infile = pipefd[0];
     }
-}
-
-int main () {
-    char str[MAXLEN];
-
-    welcome_message();
-    display_prompt();
-    while (fgets(str, sizeof(str), stdin)) {
-        pipe_t p = parse_pipe(str);
-        start_pipe(p);
-        display_prompt();
-    }
-
-    return 0;
 }

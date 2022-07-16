@@ -4,23 +4,7 @@
 #include <unistd.h>
 
 #include "lists.h"
-
-typedef char* string;
-
-typedef struct cmd_t {
-    string file;
-    int argc;
-    string *argv;
-    string in;
-    string out;
-    int fd[2];
-} cmd_t;
-
-typedef struct pipe_t {
-    int size;
-    int fd[2];
-    cmd_t *cmd;
-} pipe_t;
+#include "tokens.h"
 
 string trim_token(string s) {
     int right = strlen(s)-1;
