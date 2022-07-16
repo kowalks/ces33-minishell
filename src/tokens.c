@@ -90,6 +90,7 @@ pipe_t parse_pipe(string s) {
     pipe.fd[0] = STDIN_FILENO;
     pipe.fd[1] = STDOUT_FILENO;
     pipe.fcmd = s;
+    pipe.pgid = 0;
     
     return pipe;
 }

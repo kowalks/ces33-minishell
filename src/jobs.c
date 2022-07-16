@@ -114,7 +114,6 @@ void start_pipe(pipe_t *p) {
             if (!p->pgid)
                 p->pgid = child_pid;
             setpgid(child_pid, p->pgid);
-            // waitpid(child_pid, &wstatus, WUNTRACED);
         } else { // error
             perror("fork");
             exit(EXIT_FAILURE);
