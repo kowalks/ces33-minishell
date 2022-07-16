@@ -115,8 +115,6 @@ int main () {
     welcome_message();
     display_prompt();
     while (fgets(str, sizeof(str), stdin)) {
-        str[strlen(str)-1] = 0;
-
         pipe_t p = parse_pipe(str);
         if (p.size == 0){
             display_prompt();

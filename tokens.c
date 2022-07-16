@@ -20,11 +20,19 @@ typedef struct pipe_t {
     cmd_t *cmd;
 } pipe_t;
 
+string trim_token(string s) {
+    int right = strlen(s)-1;
+    while(s[right]=='\n' && right>0)
+        right--;
+    s[right+1] = '\0';
+    return s;
+}
+
 ll *tokenize(string s, string delim) {
     ll *list = linked_list();
     string token = strtok(s, delim);
     while (token != NULL) {
-        push(list, token);
+        push(list, trim_token(token));
         token = strtok(NULL, delim);
     }
     return list;
@@ -70,6 +78,9 @@ cmd_t parse_cmd(string s) {
 }
 
 pipe_t parse_pipe(string s) {
+    if (s[strlen(s)-1] == '\n')
+        s[strlen(s)-1] = '\0';
+
     ll *list = tokenize(s, "|");
 
     pipe_t pipe;
