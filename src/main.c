@@ -28,12 +28,17 @@ int main () {
     // Job control and signal handling
     init_shell();
 
+    // Handler for pipes
+    pipe_t pipes[MAXLEN];
+    int i = 0;
+
     // Main loop
     welcome_message();
     display_prompt();
     while (fgets(str, sizeof(str), stdin)) {
-        pipe_t p = parse_pipe(str);
-        start_pipe(&p);
+        pipes[i] = parse_pipe(str);
+        start_pipe(pipes+i);
+        update_status(pipes, ++i);
         display_prompt();
     }
 

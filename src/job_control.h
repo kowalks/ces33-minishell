@@ -24,4 +24,6 @@ void set_child_pid(pid_t pgid);
 
 void put_in_foreground(pipe_t *p, int sigcont);
 
+void update_status(pipe_t *pipes, int size);
+
 #endif

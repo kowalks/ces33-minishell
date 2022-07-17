@@ -24,8 +24,9 @@ typedef struct cmd_t {
     string out;             // Out redirect
     int fd[2];              // Command file descriptors
     pid_t pid;              // Command PID
-    int completed;
-    int stopped;
+    int completed;          // Status completed
+    int stopped;            // Status stopped
+    int status;             // Status wstatus
 } cmd_t;
 
 typedef struct pipe_t {
@@ -33,7 +34,7 @@ typedef struct pipe_t {
     int fd[2];              // Pipe file descriptors (start and end)
     cmd_t *cmd;             // Commands list
     pid_t pgid;             // Pipe group PID
-    struct termios tmodes;
+    struct termios tmodes;  // Terminal modes
     string fcmd;            // Formatted command
 } pipe_t;
 
