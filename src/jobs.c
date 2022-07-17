@@ -9,6 +9,7 @@
 
 #include "tokens.h"
 #include "job_control.h"
+#include "prompt.h"
 
 #define MAXLEN 1000
 
@@ -108,12 +109,10 @@ void start_pipe(pipe_t *p) {
 
         child_pid = fork();
         if (child_pid == 0) { // child
+            set_child_pid(p->pgid);
             start_cmd(cmd);
         } else if (child_pid > 0) { // parent
-            cmd->pid = child_pid;
-            if (!p->pgid)
-                p->pgid = child_pid;
-            setpgid(child_pid, p->pgid);
+            set_parent_pid(p, cmd, child_pid);
         } else { // error
             perror("fork");
             exit(EXIT_FAILURE);
@@ -126,7 +125,7 @@ void start_pipe(pipe_t *p) {
             close(outfile);
         infile = pipefd[0];
     }
-    
-    // log_pipe(p);
+
+    info_prompt(p);
     put_in_foreground(p, 0);
 }

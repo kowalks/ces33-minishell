@@ -69,6 +69,9 @@ cmd_t parse_cmd(string s) {
     if (!cmd.in) cmd.fd[0] = STDIN_FILENO;
     if (!cmd.out) cmd.fd[1] = STDOUT_FILENO;
 
+    cmd.completed = 0;
+    cmd.stopped = 0;
+
     return cmd;
 }
 

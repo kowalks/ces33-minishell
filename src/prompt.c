@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "prompt.h"
+#include "tokens.h"
 
 #ifndef __COLORS__
 #define __COLORS__
@@ -17,11 +18,18 @@
 #endif
 
 #define EMPH GRN
+#define EMPH2 CYN
 
 void display_prompt() {
     char dir[1000];
     getcwd(dir, 1000);
     printf(EMPH "msh @ " GRY "%s" EMPH " $ " RESET, dir);
+}
+
+void info_prompt(pipe_t *p) {
+    fprintf(stderr, EMPH2);
+    fprintf(stderr, "  ➜ launched with pgid %d", p->pgid);
+    fprintf(stderr, RESET "\n");
 }
 
 void welcome_message() {

@@ -18,6 +18,10 @@ void restore_signals(void);
 
 void init_shell(void);
 
+void set_parent_pid(pipe_t *p, cmd_t *cmd, pid_t child_pid);
+
+void set_child_pid(pid_t pgid);
+
 void put_in_foreground(pipe_t *p, int sigcont);
 
 #endif

@@ -24,6 +24,8 @@ typedef struct cmd_t {
     string out;             // Out redirect
     int fd[2];              // Command file descriptors
     pid_t pid;              // Command PID
+    int completed;
+    int stopped;
 } cmd_t;
 
 typedef struct pipe_t {
