@@ -65,7 +65,7 @@ void put_in_foreground(pipe_t *p, int sigcont) {
     }
 
     // Wait for job
-    waitpid(p->pgid, &wstatus, WUNTRACED);
+    waitpid(WAIT_ANY, &wstatus, WUNTRACED);
 
     // Restore shell to foreground and restore modes
     tcsetpgrp(STDIN_FILENO, shell_pgid);
